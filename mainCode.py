@@ -21,6 +21,7 @@ root.wm_title("Voltage Sensor Data Viewer")
 filesList = glob.glob("*.csv")
 tkvar = tk.StringVar(root)
 status = tk.StringVar(root)
+OVBarText = tk.StringVar(root)
 
 EM3Value = []
 EM3Time = []
@@ -28,6 +29,10 @@ EM2Value = []
 EM2Time = []
 EM1Value = []
 EM1Time = []
+OVLine = []
+OVValue = []
+OVTime = []
+OVTextstr = 'OV Points: '
 data = []
 
 def _quit():
@@ -41,6 +46,10 @@ def clearData():
     EM2Time.clear()
     EM1Value.clear()
     EM1Time.clear()
+    OVLine.clear()
+    OVTime.clear()
+    OVValue.clear()
+    OVTextstr = 'OV Points: '
     data.clear()
 
 def getAllData():
@@ -50,8 +59,14 @@ def getAllData():
         clearData()
     status.set('All plots saved.')
 
+def plotData():
+    clearData()
+    getData()
+
 def getData():
-    lwidth = 0.75
+    lwidth = 0.1
+    mwidth = 0.75
+    OVTextstr = 'OV POINTS: '
     filename = str(tkvar.get())
     filedate = filename[0:8]
     #filedate = input("Enter date file (YYYYMMDD): ")
@@ -84,6 +99,12 @@ def getData():
             if data[x][2] == 'EM3-V':
                 EM3Value.append(valueNow)
                 EM3Time.append(timestamp)
+            if valueNow > 240.0 or valueNow < 220.0:
+                OVValue.append(valueNow)
+                OVLine.append(data[x][2])
+                OVTime.append(dataTime)
+                OVTextstr = OVTextstr + str(valueNow) + '|'+ str(data[x][2]) + '|' + str(dataTime) + '//'
+                print(OVTextstr)
         except:
             pass
     EM3ValueA = np.array(EM3Value)
@@ -104,9 +125,9 @@ def getData():
     plt.title(title)
     plt.xlabel('Time (HH:MM:SS)')
     plt.ylabel('Voltage (V)')
-    plt.plot_date(EM1Time,EM1ValueA,linestyle='-',label='EM1-V',ms=0,linewidth=lwidth,color='green')
-    plt.plot_date(EM2Time,EM2ValueA,linestyle='-',label='EM2-V',ms=0,linewidth=lwidth,color='red')
-    plt.plot_date(EM3Time,EM3ValueA,linestyle='-',label='EM3-V',ms=0,linewidth=lwidth,color='blue')
+    plt.plot_date(EM1Time,EM1ValueA,linestyle='-',label='EM1-V',ms=0,linewidth=lwidth,color='green',marker='o',markersize=mwidth)
+    plt.plot_date(EM2Time,EM2ValueA,linestyle='-',label='EM2-V',ms=0,linewidth=lwidth,color='red',marker='o',markersize=mwidth)
+    plt.plot_date(EM3Time,EM3ValueA,linestyle='-',label='EM3-V',ms=0,linewidth=lwidth,color='blue',marker='o',markersize=mwidth)
     plt.gcf().autofmt_xdate(rotation=90)
     dateFMT = mdates.DateFormatter('%H:%M:%S')
     plt.gca().xaxis.set_major_formatter(dateFMT)
@@ -117,6 +138,7 @@ def getData():
     plt.legend(fontsize='small',loc='upper right')
 
     status.set('Figure saved as '+filedate+'.png')
+    OVBarText.set(OVTextstr)
     print('Figure saved as '+filedate+'.png')
     plt.savefig(filedate+'.png')
     np.delete(EM1ValueA,[0])
@@ -124,13 +146,12 @@ def getData():
     np.delete(EM3ValueA,[0])
     print('Cleared ARRAY')
 
-
 tkvar.set('Select File')
 status.set('Ready')
 f = tk.Frame(root)
 popupMenu = tk.OptionMenu(f, tkvar, *filesList)
 popupMenu.pack(padx=5, pady=10,side=tk.LEFT)
-button = tk.Button(master=f, text="View Data", command=getData)
+button = tk.Button(master=f, text="View Data", command=plotData)
 button.pack(padx=5, pady=10,side=tk.LEFT)
 statusBar = tk.Label(master=f,textvariable=status,width=50, anchor='w')
 statusBar.pack(side=tk.LEFT,pady=10,padx=5)
@@ -147,6 +168,9 @@ canvas = FigureCanvasTkAgg(fig, master=root)  # A tk.DrawingArea.
 canvas.draw()
 canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
 
+OVBarText.set('OV points listed here')
+OVBar = tk.Label(master=root,textvariable=OVBarText)
+OVBar.pack(side=tk.TOP, fill = tk.BOTH, expand=1)
 
 toolbar = NavigationToolbar2Tk(canvas, root)
 toolbar.update()
